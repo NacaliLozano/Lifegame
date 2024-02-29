@@ -35,80 +35,84 @@ class Board:
                 self.cells[row].append(Cell())
         
     def printBoard(self):
+        print(" 0123456789")
         for row in range(self.rows):
+            print(row, end="")
             for column in range(self.columns):
                 if self.cells[row][column].getAlive():
                     print("*", end="")
                 else:
                     print(" ", end="")
             print("")
+            
+    def getCell(self, row, col):
+        if row in range(self.rows) and col in range(self.columns):
+            return self.cells[row][col]
+        else:
+            return None
+        
+    def getRows(self):
+        return self.rows
+    
+    def getColumns(self):
+        return self.columns
                 
 class Game:
     def __init__(self):
         self.board = Board()
         try:
-            with open(input("Enter file name: ")) as f:
+            with open("game.txt") as f:
                 lines = f.readlines()
-
+            assert(len(lines) == 10)
             for row_idx, row in enumerate(lines):
-                for col_idx, column in enumerate(row.strip()):
+                assert(len(row) == 11)
+                for col_idx, column in enumerate(row):
                     if column == '*':
-                        self.board.cells[row_idx][col_idx].setAlive()
+                        self.board.getCell(row_idx, col_idx).setAlive()
                         for inc_row in [-1, 0, 1]:
                             for inc_col in [-1, 0, 1]:
                                 if inc_row == 0 and inc_col == 0:
                                     continue
                                 new_row = row_idx + inc_row
                                 new_col = col_idx + inc_col
-                                if 0 <= new_row < self.board.rows and 0 <= new_col < self.board.columns:
-                                    self.board.cells[new_row][new_col].addNeighbor()
+                                if new_row in range(self.board.getRows()) and new_col in range(self.board.getColumns()):
+                                    self.board.getCell(new_row, new_col).addNeighbor()
 
         except FileNotFoundError:
-            print("No valid board found")
+            print("No board found")
 
     def nextGeneration(self):
-        for row in range(self.board.rows):
-            for col in range(self.board.columns):
-                current_cell = self.board.cells[row][col]
+        for row in range(self.board.getRows()):
+            for col in range(self.board.getColumns()):
+                current_cell = self.board.getCell(row, col)
                 alive_neighbors = current_cell.getNeighbors()
     
                 if current_cell.getAlive():
                     if alive_neighbors < 2 or alive_neighbors > 3:
-                        current_cell.killCell()  # Rule 1 and 3
+                        current_cell.killCell()  # Rules 1 and 3
+                        for inc_row in [-1, 0, 1]:
+                            for inc_col in [-1, 0, 1]:
+                                if inc_row == 0 and inc_col == 0:
+                                    continue
+                                new_row = row + inc_row
+                                new_col = col + inc_col
+                                if new_row in range(self.board.getRows()) and new_col in range(self.board.getColumns()):
+                                    self.board.getCell(new_row, new_col).removeNeighbor()
                 else:
                     if alive_neighbors == 3:
                         current_cell.setAlive()  # Rule 4
-    
-        # After processing all cells, update neighbor counts
-        for row in range(self.board.rows):
-            for col in range(self.board.columns):
-                current_cell = self.board.cells[row][col]
-                if current_cell.getAlive():
-                    for inc_row in [-1, 0, 1]:
-                        for inc_col in [-1, 0, 1]:
-                            if inc_row == 0 and inc_col == 0:
-                                continue
-                            new_row = row + inc_row
-                            new_col = col + inc_col
-                            if 0 <= new_row < self.board.rows and 0 <= new_col < self.board.columns:
-                                self.board.cells[new_row][new_col].addNeighbor()
-    
-        # After updating all cells and neighbor counts, reprocess cells for Rule 2
-        for row in range(self.board.rows):
-            for col in range(self.board.columns):
-                current_cell = self.board.cells[row][col]
-                alive_neighbors = current_cell.getNeighbors()
-                if current_cell.getAlive():
-                    if 2 <= alive_neighbors <= 3:
-                        continue  # Rule 2, live cell survives
-                    else:
-                        current_cell.killCell()  # Rule 1 and 3
-                else:
-                    if alive_neighbors == 3:
-                        current_cell.setAlive()  # Rule 4
+                        for inc_row in [-1, 0, 1]:
+                            for inc_col in [-1, 0, 1]:
+                                if inc_row == 0 and inc_col == 0:
+                                    continue
+                                new_row = row + inc_row
+                                new_col = col + inc_col
+                                if new_row in range(self.board.getRows()) and new_col in range(self.board.getColumns()):
+                                    self.board.getCell(new_row, new_col).addNeighbor()
                     
     def loop(self):
         end = False
+        self.board.printBoard()
         while not end:
             entry = input("Type 1 to continue, 0 to end: ")
             if entry == "1":
